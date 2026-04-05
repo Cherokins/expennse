@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1"/>
+  <title>Epennse — Track Every Shilling</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:#070B14; --bg2:#0F1629; --card:#162040; --border:#1E2D50;
+      --green:#00C896; --green-dim:#00A87E; --green-dark:#002A20;
+      --blue:#3B82F6; --yellow:#F59E0B; --red:#EF4444; --purple:#8B5CF6;
+      --text:#F0F4FF; --text-dim:#7B8DB0; --text-muted:#3D4E6E;
+      --font-head:'Syne',sans-serif; --font-body:'DM Sans',sans-serif;
+      --r:16px;
+    }
+    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    body{background:var(--bg);color:var(--text);font-family:var(--font-body);min-height:100vh;max-width:480px;margin:0 auto;overflow-x:hidden}
+    body::before{content:'';position:fixed;top:-100px;left:50%;transform:translateX(-50%);width:500px;height:500px;background:radial-gradient(circle,rgba(0,200,150,.06) 0%,transparent 70%);pointer-events:none;z-index:0}
+
+    /* ── SCREENS ── */
+    .screen{display:none;position:relative;z-index:1}
+    .screen.active{display:block}
+
+    /* ── NAV (legal pages) ── */
+    .top-nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+    .nav-logo{font-family:var(--font-head);font-size:18px;font-weight:700;color:var(--green);cursor:pointer}
+    .nav-links{display:flex;gap:16px}
+    .nav-links span{font-size:12px;color:var(--text-dim);cursor:pointer;transition:color .2s}
+    .nav-links span:hover,.nav-links span.active{color:var(--green)}
+
+    /* ── LOGIN ── */
+    #screen-login{min-height:100vh;display:none;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px}
+    #screen-login.active{display:flex}
+    .logo-mark{width:76px;height:76px;background:linear-gradient(135deg,var(--green),var(--blue));border-radius:22px;display:flex;align-items:center;justify-content:center;font-size:34px;margin-bottom:20px;box-shadow:0 0 48px rgba(0,200,150,.2)}
+    .app-name{font-family:var(--font-head);font-size:40px;font-weight:800;letter-spacing:-1px;background:linear-gradient(135deg,#fff 0%,var(--text-dim) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:6px}
+    .app-tagline{font-size:14px;color:var(--text-dim);text-align:center;line-height:1.6;margin-bottom:40px}
+    .login-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:28px 24px;width:100%;display:flex;flex-direction:column;gap:14px}
+    .login-card label{font-size:11px;letter-spacing:2px;color:var(--text-muted);text-transform:uppercase}
+    .phone-wrap{display:flex;align-items:center;background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:border .2s}
+    .phone-wrap:focus-within{border-color:var(--green)}
+    .phone-prefix{padding:14px 10px 14px 14px;color:var(--text-dim);font-size:14px;border-right:1px solid var(--border);white-space:nowrap}
+    .phone-wrap input{flex:1;background:transparent;border:none;padding:14px;color:var(--text);font-family:var(--font-body);font-size:16px;outline:none}
+    .std-input{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;color:var(--text);font-family:var(--font-body);font-size:15px;outline:none;width:100%;transition:border .2s}
+    .std-input:focus{border-color:var(--green)}
+    .login-note{font-size:11px;color:var(--text-muted);text-align:center;line-height:1.6}
+    .legal-links{display:flex;justify-content:center;gap:16px;font-size:12px}
+    .legal-links span{color:var(--green);cursor:pointer;text-decoration:underline}
+
+    /* ── BUTTONS ── */
+    .btn-primary{background:linear-gradient(135deg,var(--green),var(--green-dim));color:#fff;border:none;border-radius:12px;padding:15px;font-family:var(--font-head);font-size:16px;font-weight:700;letter-spacing:1px;cursor:pointer;width:100%;box-shadow:0 8px 24px rgba(0,200,150,.2);transition:all .2s}
+    .btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(0,200,150,.3)}
+    .btn-primary:active{transform:translateY(0)}
+
+    /* ── APP ── */
+    #screen-app{padding-bottom:100px}
+    .app-header{padding:20px 24px 0;display:flex;align-items:center;justify-content:space-between}
+    .hdr-greeting{font-size:13px;color:var(--text-dim);margin-bottom:2px}
+    .hdr-name{font-family:var(--font-head);font-size:22px;font-weight:700}
+    .avatar{width:42px;height:42px;background:linear-gradient(135deg,var(--green),var(--blue));border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--font-head);font-size:18px;font-weight:700;color:#fff;cursor:pointer;flex-shrink:0}
+
+    /* Month nav */
+    .month-nav{display:flex;align-items:center;justify-content:center;gap:16px;padding:16px 24px}
+    .mnav-btn{background:var(--card);border:1px solid var(--border);color:var(--text-dim);width:32px;height:32px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;transition:all .2s}
+    .mnav-btn:hover{border-color:var(--green);color:var(--green)}
+    .mnav-label{font-family:var(--font-head);font-size:16px;font-weight:700;min-width:150px;text-align:center}
+
+    /* Balance card */
+    .bal-card{margin:0 24px 20px;background:linear-gradient(135deg,#162040,#1a2a50 50%,#162040);border:1px solid var(--border);border-radius:var(--r);padding:24px;position:relative;overflow:hidden}
+    .bal-card::before{content:'';position:absolute;top:-40px;right:-40px;width:160px;height:160px;background:radial-gradient(circle,rgba(0,200,150,.1) 0%,transparent 70%)}
+    .bal-label{font-size:11px;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px}
+    .bal-amount{font-family:var(--font-head);font-size:40px;font-weight:800;letter-spacing:-1px;line-height:1;margin-bottom:4px}
+    .bal-amount .cur{font-size:18px;color:var(--text-dim);font-weight:600}
+    .bal-sub{font-size:12px;color:var(--text-dim);margin-bottom:20px}
+    .bal-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .bal-stat{background:rgba(255,255,255,.04);border-radius:10px;padding:12px;display:flex;align-items:center;gap:10px}
+    .bsi{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .bsi.inc{background:rgba(0,200,150,.12)}
+    .bsi.exp{background:rgba(239,68,68,.12)}
+    .bsl{font-size:10px;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase}
+    .bsv{font-family:var(--font-head);font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .bsv.inc{color:var(--green)}
+    .bsv.exp{color:var(--red)}
+
+    /* Sections */
+    .sect{padding:0 24px;margin-bottom:24px}
+    .sect-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+    .sect-title{font-family:var(--font-head);font-size:16px;font-weight:700}
+    .sect-link{font-size:12px;color:var(--green);cursor:pointer}
+
+    /* Chart */
+    .chart-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:20px;display:flex;align-items:center;gap:20px}
+    .chart-wrap{width:110px;height:110px;flex-shrink:0;position:relative}
+    .chart-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none}
+    .cc-val{font-family:var(--font-head);font-size:18px;font-weight:800;line-height:1}
+    .cc-lbl{font-size:9px;color:var(--text-muted);letter-spacing:1px}
+    .chart-legend{flex:1;display:flex;flex-direction:column;gap:8px;max-height:140px;overflow-y:auto}
+    .leg-item{display:flex;align-items:center;gap:8px}
+    .leg-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+    .leg-name{font-size:12px;color:var(--text-dim);flex:1}
+    .leg-pct{font-size:12px;font-weight:600}
+
+    /* Transactions */
+    .tx-list{display:flex;flex-direction:column;gap:10px}
+    .tx-item{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px;animation:slideIn .3s ease}
+    @keyframes slideIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    .tx-ico{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+    .tx-info{flex:1;min-width:0}
+    .tx-name{font-size:14px;font-weight:500;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .tx-meta{font-size:11px;color:var(--text-muted)}
+    .tx-amt{font-family:var(--font-head);font-size:16px;font-weight:700;flex-shrink:0}
+    .tx-amt.expense{color:var(--red)}
+    .tx-amt.income{color:var(--green)}
+    .empty-state{text-align:center;padding:48px 20px;color:var(--text-muted)}
+    .empty-icon{font-size:40px;margin-bottom:12px}
+    .empty-state p{font-size:13px;line-height:1.7}
+
+    /* AI card */
+    .ai-card{background:linear-gradient(135deg,#0f1f40,#162040);border:1px solid rgba(139,92,246,.3);border-radius:var(--r);padding:20px;cursor:pointer;position:relative;overflow:hidden;transition:all .2s}
+    .ai-card::before{content:'';position:absolute;top:-20px;right:-20px;width:100px;height:100px;background:radial-gradient(circle,rgba(139,92,246,.15) 0%,transparent 70%)}
+    .ai-card:hover{border-color:rgba(139,92,246,.6);transform:translateY(-1px)}
+    .ai-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+    .ai-badge{background:rgba(139,92,246,.2);border:1px solid rgba(139,92,246,.4);color:#A78BFA;font-size:10px;letter-spacing:2px;padding:3px 8px;border-radius:20px;font-weight:600}
+    .ai-title{font-family:var(--font-head);font-size:15px;font-weight:700}
+    .ai-preview{font-size:13px;color:var(--text-dim);line-height:1.5}
+    .ai-cta{margin-top:12px;font-size:12px;color:#A78BFA}
+
+    /* FAB */
+    .fab{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,var(--green),var(--green-dim));color:#fff;border:none;border-radius:50px;padding:16px 36px;font-family:var(--font-head);font-size:15px;font-weight:700;letter-spacing:1px;cursor:pointer;display:flex;align-items:center;gap:8px;box-shadow:0 8px 32px rgba(0,200,150,.35);transition:all .2s;z-index:50}
+    .fab:hover{transform:translateX(-50%) translateY(-2px);box-shadow:0 12px 40px rgba(0,200,150,.45)}
+    #screen-app:not(.active) ~ .fab{display:none}
+
+    /* Modals */
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);z-index:200;display:none;align-items:flex-end;justify-content:center}
+    .overlay.open{display:flex}
+    .sheet{background:var(--bg2);border-radius:24px 24px 0 0;width:100%;max-width:480px;padding:24px 24px 48px;max-height:92vh;overflow-y:auto;animation:sheetUp .3s cubic-bezier(.34,1.56,.64,1)}
+    @keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+    .sheet-handle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 20px}
+    .sheet-title{font-family:var(--font-head);font-size:20px;font-weight:700;margin-bottom:22px}
+    .fg{margin-bottom:16px}
+    .flabel{font-size:11px;color:var(--text-muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;display:block}
+    .type-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+    .type-btn{border-radius:10px;padding:13px;border:2px solid var(--border);background:var(--card);color:var(--text-dim);font-family:var(--font-body);font-size:14px;font-weight:500;cursor:pointer;transition:all .2s;text-align:center}
+    .type-btn.act-exp{border-color:var(--red);background:rgba(239,68,68,.1);color:var(--red)}
+    .type-btn.act-inc{border-color:var(--green);background:rgba(0,200,150,.1);color:var(--green)}
+    .amt-wrap{display:flex;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:border .2s}
+    .amt-wrap:focus-within{border-color:var(--green)}
+    .amt-prefix{padding:14px 4px 14px 16px;font-family:var(--font-head);font-size:16px;color:var(--text-dim)}
+    .amt-input{flex:1;background:transparent;border:none;padding:14px 16px 14px 4px;color:var(--text);font-family:var(--font-head);font-size:26px;font-weight:700;outline:none;min-width:0}
+    .finput{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:13px 16px;color:var(--text);font-family:var(--font-body);font-size:15px;outline:none;width:100%;transition:border .2s}
+    .finput:focus{border-color:var(--green)}
+    .finput option{background:var(--card)}
+    .cat-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+    .cat-btn{border:2px solid var(--border);background:var(--card);border-radius:10px;padding:10px 4px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;transition:all .15s}
+    .cat-btn:hover{border-color:var(--text-muted)}
+    .cat-btn.sel{border-color:var(--green);background:rgba(0,200,150,.08)}
+    .cat-icon{font-size:20px}
+    .cat-lbl{font-size:9px;color:var(--text-muted);text-align:center;line-height:1.2}
+    .cat-btn.sel .cat-lbl{color:var(--green)}
+
+    /* Insights */
+    .ins-item{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px;display:flex;gap:12px}
+    .ins-ico{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+    .ins-ico.good{background:rgba(0,200,150,.12)}
+    .ins-ico.warn{background:rgba(245,158,11,.12)}
+    .ins-ico.bad{background:rgba(239,68,68,.12)}
+    .ins-ico.info{background:rgba(59,130,246,.12)}
+    .ins-txt h4{font-size:13px;font-weight:600;margin-bottom:4px}
+    .ins-txt p{font-size:12px;color:var(--text-dim);line-height:1.55}
+    .score-card{background:linear-gradient(135deg,var(--green-dark),#001a30);border:1px solid rgba(0,200,150,.3);border-radius:var(--r);padding:20px;text-align:center;margin-bottom:16px}
+    .score-ring{font-family:var(--font-head);font-size:56px;font-weight:800;line-height:1}
+    .score-label{font-size:13px;color:var(--text-dim);margin-top:4px}
+    .score-grade{font-size:16px;font-weight:600;margin-top:6px}
+
+    /* Toast */
+    .toast{position:fixed;bottom:104px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--green);border-radius:10px;padding:12px 20px;font-size:13px;color:var(--green);z-index:999;display:none;white-space:nowrap;box-shadow:0 8px 24px rgba(0,200,150,.2)}
+    .spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* ══════════════════════════════════════
+       LEGAL PAGES
+    ══════════════════════════════════════ */
+    .legal-page{padding-bottom:60px}
+    .legal-hero{background:linear-gradient(135deg,#0f1f40,#162040);border-bottom:1px solid var(--border);padding:40px 24px 32px;text-align:center}
+    .legal-badge{display:inline-block;font-size:11px;letter-spacing:2px;padding:4px 14px;border-radius:20px;margin-bottom:14px}
+    .badge-privacy{background:rgba(0,200,150,.15);border:1px solid rgba(0,200,150,.3);color:var(--green)}
+    .badge-terms{background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.3);color:var(--blue)}
+    .legal-hero h1{font-family:var(--font-head);font-size:26px;font-weight:700;margin-bottom:8px}
+    .legal-hero p{font-size:13px;color:var(--text-dim)}
+    .legal-body{max-width:720px;margin:0 auto;padding:32px 24px}
+    .last-updated{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 18px;font-size:13px;color:var(--text-dim);margin-bottom:32px}
+    .legal-body h2{font-family:var(--font-head);font-size:18px;font-weight:700;color:var(--text);margin:36px 0 10px;padding-top:8px;border-top:1px solid var(--border)}
+    .legal-body h2:first-of-type{border-top:none;margin-top:0}
+    .legal-body p{font-size:14px;color:var(--text-dim);margin-bottom:12px;line-height:1.75}
+    .legal-body ul,.legal-body ol{padding-left:20px;margin-bottom:12px}
+    .legal-body li{font-size:14px;color:var(--text-dim);margin-bottom:7px;line-height:1.65}
+    .legal-body li strong{color:var(--text)}
+    .hbox{background:var(--card);border:1px solid var(--border);border-radius:0 10px 10px 0;padding:14px 18px;margin:16px 0}
+    .hbox.green{border-left:3px solid var(--green)}
+    .hbox.yellow{border-left:3px solid var(--yellow)}
+    .hbox.red{border-left:3px solid var(--red)}
+    .hbox.blue{border-left:3px solid var(--blue)}
+    .hbox p{margin:0;font-size:13px}
+    .data-table{width:100%;border-collapse:collapse;margin:14px 0 20px;font-size:13px}
+    .data-table th{background:var(--card);color:var(--text);padding:10px 14px;text-align:left;font-weight:600;border:1px solid var(--border)}
+    .data-table td{padding:10px 14px;color:var(--text-dim);border:1px solid var(--border);vertical-align:top}
+    .rights-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin:14px 0}
+    .right-item{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px}
+    .right-item .ri-icon{font-size:18px;margin-bottom:5px}
+    .right-item h4{font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px}
+    .right-item p{font-size:12px;color:var(--text-dim);margin:0}
+    .fee-card{background:linear-gradient(135deg,var(--card),#1a2a50);border:1px solid var(--border);border-radius:12px;padding:20px;margin:16px 0;display:flex;align-items:center;gap:16px}
+    .fee-amount{font-family:var(--font-head);font-size:44px;font-weight:800;color:var(--green);line-height:1;flex-shrink:0}
+    .fee-info h4{font-family:var(--font-head);font-size:15px;margin-bottom:4px}
+    .fee-info p{font-size:13px;margin:0;color:var(--text-dim)}
+    .contact-card{background:linear-gradient(135deg,var(--card),#1a2a50);border:1px solid var(--border);border-radius:12px;padding:22px;margin-top:32px}
+    .contact-card h3{font-family:var(--font-head);font-size:17px;margin-bottom:12px}
+    .contact-item{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:13px;color:var(--text-dim)}
+    .contact-item a{color:var(--green);text-decoration:none}
+    .legal-footer{background:var(--bg2);border-top:1px solid var(--border);padding:20px;text-align:center;font-size:12px;color:var(--text-muted)}
+    .legal-footer span{color:var(--green);cursor:pointer;margin:0 8px}
+
+    @media(min-width:480px){body{border-left:1px solid var(--border);border-right:1px solid var(--border);min-height:100vh}}
+  </style>
+</head>
+<body>
+
+<!-- ════════════════════════════════
+     LOGIN
+════════════════════════════════ -->
+<div id="screen-login" class="screen active">
+  <div class="logo-mark">💸</div>
+  <h1 class="app-name">Epennse</h1>
+  <p class="app-tagline">Track every shilling.<br/>Spend smarter every month.</p>
+  <div class="login-card">
+    <label>Your Name</label>
+    <input class="std-input" id="ln" type="text" placeholder="e.g. John Kamau" autocomplete="name"/>
+    <label>M-Pesa Number</label>
+    <div class="phone-wrap">
+      <span class="phone-prefix">🇰🇪 +254</span>
+      <input id="lp" type="tel" placeholder="7XX XXX XXX" maxlength="9" inputmode="numeric"/>
+    </div>
+    <button class="btn-primary" id="login-btn">GET STARTED →</button>
+    <p class="login-note">Your data is stored privately. Your phone number is your ID — no password needed.</p>
+    <div class="legal-links">
+      <span onclick="go('privacy')">Privacy Policy</span>
+      <span onclick="go('terms')">Terms &amp; Conditions</span>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     APP
+════════════════════════════════ -->
+<div id="screen-app" class="screen">
+  <div class="app-header">
+    <div>
+      <div class="hdr-greeting" id="greeting">Good morning</div>
+      <div class="hdr-name" id="hdr-name">—</div>
+    </div>
+    <div class="avatar" id="avatar">?</div>
+  </div>
+
+  <div class="month-nav">
+    <button class="mnav-btn" id="prev-mo">‹</button>
+    <div class="mnav-label" id="mo-label">April 2026</div>
+    <button class="mnav-btn" id="next-mo">›</button>
+  </div>
+
+  <div class="bal-card">
+    <div class="bal-label">TOTAL SPENT THIS MONTH</div>
+    <div class="bal-amount"><span class="cur">KES </span><span id="tot-spent">0</span></div>
+    <div class="bal-sub" id="bal-sub">No transactions yet</div>
+    <div class="bal-row">
+      <div class="bal-stat">
+        <div class="bsi inc">↑</div>
+        <div><div class="bsl">Income</div><div class="bsv inc" id="tot-inc">KES 0</div></div>
+      </div>
+      <div class="bal-stat">
+        <div class="bsi exp">↓</div>
+        <div><div class="bsl">Expenses</div><div class="bsv exp" id="tot-exp">KES 0</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sect">
+    <div class="sect-head"><div class="sect-title">Breakdown</div></div>
+    <div class="chart-card">
+      <div class="chart-wrap">
+        <canvas id="donut"></canvas>
+        <div class="chart-center"><div class="cc-val" id="cc-val">—</div><div class="cc-lbl">CATS</div></div>
+      </div>
+      <div class="chart-legend" id="legend"><span style="color:var(--text-muted);font-size:12px">No expenses yet</span></div>
+    </div>
+  </div>
+
+  <div class="sect">
+    <div class="ai-card" id="ai-trigger">
+      <div class="ai-head"><span class="ai-badge">AI INSIGHTS</span><span class="ai-title">Spending Analysis</span></div>
+      <div class="ai-preview" id="ai-preview">Add a few transactions and tap here for personalised spending advice.</div>
+      <div class="ai-cta">View full analysis →</div>
+    </div>
+  </div>
+
+  <div class="sect">
+    <div class="sect-head">
+      <div class="sect-title">Recent</div>
+      <span class="sect-link" id="view-all">View all</span>
+    </div>
+    <div class="tx-list" id="tx-list">
+      <div class="empty-state"><div class="empty-icon">🧾</div><p>No transactions yet.<br/>Tap below to add your first one.</p></div>
+    </div>
+  </div>
+
+  <div class="sect" style="margin-top:8px">
+    <div style="display:flex;gap:16px;justify-content:center;font-size:12px">
+      <span style="color:var(--green);cursor:pointer" onclick="go('privacy')">Privacy Policy</span>
+      <span style="color:var(--green);cursor:pointer" onclick="go('terms')">Terms &amp; Conditions</span>
+    </div>
+  </div>
+</div>
+
+<!-- FAB -->
+<button class="fab" id="fab" style="display:none">＋ &nbsp;Add Transaction</button>
+
+<!-- ════════════════════════════════
+     PRIVACY POLICY
+════════════════════════════════ -->
+<div id="screen-privacy" class="screen">
+  <nav class="top-nav">
+    <span class="nav-logo" onclick="goBack()">💸 Epennse</span>
+    <div class="nav-links">
+      <span onclick="go('privacy')" class="active">Privacy</span>
+      <span onclick="go('terms')">Terms</span>
+      <span onclick="goBack()">← Back</span>
+    </div>
+  </nav>
+  <div class="legal-page">
+    <div class="legal-hero">
+      <div class="legal-badge badge-privacy">LEGAL DOCUMENT</div>
+      <h1>Privacy Policy</h1>
+      <p>How Epennse collects, uses, and protects your personal data</p>
+    </div>
+    <div class="legal-body">
+      <div class="last-updated">📅 Last updated: <strong>April 2026</strong> · Effective: April 2026</div>
+
+      <h2>1. Introduction</h2>
+      <p>Epennse Tracker ("Epennse", "we", "us") is a personal finance tracking application developed and operated by <strong>[Your Name / Business Name]</strong>, based in Nairobi, Kenya. This Privacy Policy explains how we collect, use, store, share, and protect your personal information in accordance with the <strong>Kenya Data Protection Act, 2019</strong>.</p>
+      <div class="hbox green"><p>🔒 <strong>Short version:</strong> We collect only what we need to run the app. We never sell your data. Your financial information is private and only visible to you.</p></div>
+
+      <h2>2. Information We Collect</h2>
+      <table class="data-table">
+        <tr><th>Data Type</th><th>What We Collect</th><th>Why</th></tr>
+        <tr><td><strong>Identity</strong></td><td>Name, M-Pesa phone number</td><td>Account creation &amp; identification</td></tr>
+        <tr><td><strong>Financial</strong></td><td>Transaction amounts, categories, dates, notes you manually enter</td><td>Core tracking service</td></tr>
+        <tr><td><strong>Usage</strong></td><td>App interaction patterns, features used</td><td>Improve experience</td></tr>
+        <tr><td><strong>Device</strong></td><td>Device type, OS, browser type</td><td>Compatibility &amp; security</td></tr>
+        <tr><td><strong>Payment</strong></td><td>M-Pesa reference for KES 1 premium</td><td>Verify premium access</td></tr>
+      </table>
+      <p><strong>What we do NOT collect:</strong> We do not access your M-Pesa transaction history, account balance, or any financial data from Safaricom. All financial data is manually entered by you.</p>
+
+      <h2>3. How We Use Your Information</h2>
+      <ul>
+        <li><strong>Providing the service:</strong> Storing and displaying your transaction history and generating spending insights</li>
+        <li><strong>Account management:</strong> Identifying your account using your phone number</li>
+        <li><strong>Improving the app:</strong> Analysing anonymised, aggregated usage patterns</li>
+        <li><strong>Customer support:</strong> Responding to queries or complaints</li>
+        <li><strong>Legal compliance:</strong> Meeting obligations under Kenyan law</li>
+      </ul>
+      <p>We will never use your data for third-party advertising or commercial profiling without your explicit consent.</p>
+
+      <h2>4. Data Storage and Security</h2>
+      <p>Your data is stored on <strong>Google Firebase (Firestore)</strong>, compliant with ISO 27001, SOC 1/2/3, and GDPR. We use HTTPS encryption, Firebase Security Rules ensuring only you can access your data, and phone number-based access control.</p>
+
+      <h2>5. Data Sharing</h2>
+      <p>We do not sell, rent, or trade your personal data. Limited sharing occurs only with:</p>
+      <ul>
+        <li><strong>Google Firebase</strong> — our cloud infrastructure provider</li>
+        <li><strong>Safaricom / M-Pesa</strong> — limited identity data for Mini App authentication only</li>
+        <li><strong>Legal requirements</strong> — if required by Kenyan courts or law enforcement</li>
+      </ul>
+
+      <h2>6. Your Rights (Kenya Data Protection Act, 2019)</h2>
+      <div class="rights-grid">
+        <div class="right-item"><div class="ri-icon">👁️</div><h4>Access</h4><p>Request a copy of all data we hold about you</p></div>
+        <div class="right-item"><div class="ri-icon">✏️</div><h4>Rectification</h4><p>Correct any inaccurate personal data</p></div>
+        <div class="right-item"><div class="ri-icon">🗑️</div><h4>Erasure</h4><p>Request deletion of your account and all data</p></div>
+        <div class="right-item"><div class="ri-icon">📦</div><h4>Portability</h4><p>Receive your data in machine-readable format</p></div>
+        <div class="right-item"><div class="ri-icon">🚫</div><h4>Object</h4><p>Object to certain types of processing</p></div>
+        <div class="right-item"><div class="ri-icon">⏸️</div><h4>Restriction</h4><p>Request restriction of processing</p></div>
+      </div>
+      <p>We respond within <strong>21 days</strong> as required by law.</p>
+
+      <h2>7. Data Retention</h2>
+      <p>We retain data while your account is active. Upon deletion request, data is removed within <strong>30 days</strong>. You may delete individual transactions at any time within the app.</p>
+
+      <h2>8. Children's Privacy</h2>
+      <p>Epennse is not intended for users under <strong>18 years</strong>. We do not knowingly collect data from minors.</p>
+
+      <h2>9. M-Pesa Mini App Disclosures</h2>
+      <ul>
+        <li>Your M-Pesa phone number is shared with Epennse by Safaricom for account identification only, with your consent at first launch</li>
+        <li>Epennse does not access your M-Pesa wallet balance or transaction history</li>
+        <li>Epennse is an independent third-party app and is not operated by Safaricom</li>
+      </ul>
+
+      <h2>10. Contact Us</h2>
+      <div class="contact-card">
+        <h3>Questions about your privacy?</h3>
+        <div class="contact-item">📧 <a href="mailto:privacy@epennse.app">privacy@epennse.app</a></div>
+        <div class="contact-item">📍 Nairobi, Kenya</div>
+        <div class="contact-item">🕐 Response: Within 21 days</div>
+        <p style="margin-top:10px;font-size:12px;color:var(--text-muted)">You may also lodge a complaint with the <strong>Office of the Data Protection Commissioner (ODPC)</strong> at <a href="https://www.odpc.go.ke" target="_blank" style="color:var(--green)">www.odpc.go.ke</a></p>
+      </div>
+    </div>
+    <div class="legal-footer">
+      © 2026 Epennse Tracker
+      <span onclick="go('privacy')">Privacy Policy</span>
+      <span onclick="go('terms')">Terms &amp; Conditions</span>
+      <span onclick="goBack()">Back to App</span>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     TERMS & CONDITIONS
+════════════════════════════════ -->
+<div id="screen-terms" class="screen">
+  <nav class="top-nav">
+    <span class="nav-logo" onclick="goBack()">💸 Epennse</span>
+    <div class="nav-links">
+      <span onclick="go('privacy')">Privacy</span>
+      <span onclick="go('terms')" class="active">Terms</span>
+      <span onclick="goBack()">← Back</span>
+    </div>
+  </nav>
+  <div class="legal-page">
+    <div class="legal-hero">
+      <div class="legal-badge badge-terms">LEGAL DOCUMENT</div>
+      <h1>Terms &amp; Conditions</h1>
+      <p>Please read these terms carefully before using Epennse Tracker</p>
+    </div>
+    <div class="legal-body">
+      <div class="last-updated">📅 Last updated: <strong>April 2026</strong> · Governed by the laws of Kenya</div>
+      <div class="hbox blue"><p>📌 <strong>Summary:</strong> Epennse is a personal expense tracking tool. It is not a bank or financial advisor. By using it, you agree to these terms.</p></div>
+
+      <h2>1. Acceptance of Terms</h2>
+      <p>By accessing or using Epennse Tracker, whether via the web app or the M-Pesa Super App Mini App, you agree to be bound by these Terms and our Privacy Policy.</p>
+
+      <h2>2. Description of Service</h2>
+      <p>Epennse is a <strong>manual entry</strong> personal finance app. It allows you to record income and expenses, view spending breakdowns, and receive AI-powered insights. It does not connect to or read your M-Pesa account in any way.</p>
+
+      <h2>3. Eligibility</h2>
+      <ul>
+        <li>You must be at least <strong>18 years of age</strong></li>
+        <li>You must have a valid Kenyan M-Pesa registered phone number</li>
+        <li>You must have legal capacity to enter binding agreements under Kenyan law</li>
+      </ul>
+
+      <h2>4. User Responsibilities</h2>
+      <ul>
+        <li><strong>Accuracy:</strong> You are responsible for all data you manually enter</li>
+        <li><strong>Access:</strong> Keep your phone secure — anyone with access may see your Epennse data</li>
+        <li><strong>Compliance:</strong> Use the app in accordance with all applicable Kenyan laws</li>
+      </ul>
+
+      <h2>5. Premium Subscription and Payments</h2>
+      <div class="fee-card">
+        <div class="fee-amount">KES 1</div>
+        <div class="fee-info">
+          <h4>One-time Premium Access Fee</h4>
+          <p>Unlock AI Insights and advanced features. One-time charge, not a recurring subscription.</p>
+        </div>
+      </div>
+      <ul>
+        <li>Premium is activated upon confirmation of your KES 1 M-Pesa payment</li>
+        <li>The KES 1 fee is <strong>non-refundable</strong> once premium access has been granted</li>
+        <li>Premium access is tied to your phone number and cannot be transferred</li>
+      </ul>
+
+      <h2>6. Prohibited Uses</h2>
+      <ul>
+        <li>Attempting to access other users' accounts or data</li>
+        <li>Reverse-engineering or decompiling the application</li>
+        <li>Using automated scripts or bots on the application</li>
+        <li>Any activity that violates the <strong>Computer Misuse and Cybercrimes Act, 2018</strong></li>
+        <li>Money laundering or any activity violating the <strong>Proceeds of Crime and Anti-Money Laundering Act</strong></li>
+      </ul>
+
+      <h2>7. Financial Disclaimer</h2>
+      <div class="hbox yellow"><p>⚠️ Epennse is a budgeting tool only. It is NOT a bank, investment service, or licensed financial advisory service. Spending insights are informational only and do not constitute financial advice.</p></div>
+      <ul>
+        <li>Epennse is not licensed by the <strong>Central Bank of Kenya (CBK)</strong> or <strong>Capital Markets Authority (CMA)</strong></li>
+        <li>We are not responsible for financial decisions made based on app insights</li>
+        <li>Always consult a qualified financial advisor for professional guidance</li>
+      </ul>
+
+      <h2>8. Intellectual Property</h2>
+      <p>All content, design, and code of Epennse Tracker is the intellectual property of <strong>[Your Name / Business Name]</strong>. You retain ownership of all personal data you enter into the app.</p>
+
+      <h2>9. Limitation of Liability</h2>
+      <div class="hbox red"><p>🚨 Epennse is provided "as is". Our total liability to you shall not exceed the amount you paid us (KES 1). We are not liable for data loss, financial loss, or damages from use of the app.</p></div>
+
+      <h2>10. M-Pesa Mini App Terms</h2>
+      <ul>
+        <li>Your use is also subject to <strong>Safaricom's M-Pesa Mini App Terms of Service</strong></li>
+        <li>Epennse is an <strong>independent third-party application</strong>, not affiliated with or endorsed by Safaricom PLC</li>
+        <li>Safaricom is not responsible for any content or data practices of Epennse</li>
+      </ul>
+
+      <h2>11. Governing Law</h2>
+      <p>These Terms are governed by the laws of the <strong>Republic of Kenya</strong>. Disputes are subject to the exclusive jurisdiction of the courts of Kenya.</p>
+
+      <h2>12. Changes to Terms</h2>
+      <p>We will notify active users at least <strong>14 days</strong> before material changes take effect. Continued use constitutes acceptance of updated Terms.</p>
+
+      <h2>13. Contact Us</h2>
+      <div class="contact-card">
+        <h3>Questions about these Terms?</h3>
+        <div class="contact-item">📧 <a href="mailto:legal@epennse.app">legal@epennse.app</a></div>
+        <div class="contact-item">📍 Nairobi, Kenya</div>
+        <div class="contact-item">🕐 Response: Within 14 business days</div>
+      </div>
+    </div>
+    <div class="legal-footer">
+      © 2026 Epennse Tracker
+      <span onclick="go('privacy')">Privacy Policy</span>
+      <span onclick="go('terms')">Terms &amp; Conditions</span>
+      <span onclick="goBack()">Back to App</span>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     ADD TX MODAL
+════════════════════════════════ -->
+<div class="overlay" id="modal-add">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Add Transaction</div>
+    <div class="type-row">
+      <button class="type-btn act-exp" id="btn-exp" onclick="setType('expense')">↓ Expense</button>
+      <button class="type-btn" id="btn-inc" onclick="setType('income')">↑ Income</button>
+    </div>
+    <div class="fg">
+      <label class="flabel">Amount (KES)</label>
+      <div class="amt-wrap">
+        <span class="amt-prefix">KES</span>
+        <input class="amt-input" id="tx-amt" type="number" placeholder="0" inputmode="decimal"/>
+      </div>
+    </div>
+    <div class="fg" id="cat-section">
+      <label class="flabel">Category</label>
+      <div class="cat-grid" id="cat-grid"></div>
+    </div>
+    <div class="fg">
+      <label class="flabel">Note (optional)</label>
+      <input class="finput" id="tx-note" type="text" placeholder="e.g. Lunch at Java"/>
+    </div>
+    <div class="fg">
+      <label class="flabel">Date</label>
+      <input class="finput" id="tx-date" type="date"/>
+    </div>
+    <button class="btn-primary" id="save-btn">SAVE TRANSACTION</button>
+  </div>
+</div>
+
+<!-- INSIGHTS MODAL -->
+<div class="overlay" id="modal-ins">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
+      <span class="ai-badge">AI INSIGHTS</span>
+      <span class="sheet-title" style="margin:0">Your Analysis</span>
+    </div>
+    <div id="ins-content">
+      <div style="text-align:center;padding:40px 0;color:var(--text-muted)">
+        <div class="spinner" style="margin:0 auto 12px;width:24px;height:24px;border-width:3px"></div>
+        <p style="font-size:13px">Analysing your spending...</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ════════════════════════════════
+     SCRIPTS
+════════════════════════════════ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+import { getFirestore, collection, addDoc, onSnapshot,
+         query, where, orderBy, doc, getDoc, setDoc,
+         serverTimestamp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+
+const fb = initializeApp({
+  apiKey:"AIzaSyDVrv85nUpROeNVjddjp2DRmw7vkRM7Zg4",
+  authDomain:"surebet-ke.firebaseapp.com",
+  projectId:"surebet-ke",
+  storageBucket:"surebet-ke.firebasestorage.app",
+  messagingSenderId:"26034159425",
+  appId:"1:26034159425:web:bccadf420203d161b1ebc0"
+});
+const db = getFirestore(fb);
+
+const CATS = [
+  {id:'food',          icon:'🍔', label:'Food',       color:'#FF6B6B'},
+  {id:'transport',     icon:'🚌', label:'Transport',  color:'#4ECDC4'},
+  {id:'shopping',      icon:'🛍️', label:'Shopping',   color:'#A78BFA'},
+  {id:'health',        icon:'💊', label:'Health',     color:'#F472B6'},
+  {id:'housing',       icon:'🏠', label:'Housing',    color:'#FBBF24'},
+  {id:'airtime',       icon:'📱', label:'Airtime',    color:'#34D399'},
+  {id:'education',     icon:'📚', label:'Education',  color:'#60A5FA'},
+  {id:'entertainment', icon:'🎉', label:'Fun',        color:'#FB923C'},
+  {id:'business',      icon:'💼', label:'Business',   color:'#818CF8'},
+  {id:'other',         icon:'💸', label:'Other',      color:'#94A3B8'},
+];
+
+let user=null, txType='expense', selCat='food', curMonth=new Date(), allTxs=[], chart=null, unsub=null, prevScreen=null;
+
+const $=id=>document.getElementById(id);
+const fmt=n=>Number(n).toLocaleString('en-KE',{minimumFractionDigits:0,maximumFractionDigits:0});
+const monthKey=(d=curMonth)=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+const moLabel=d=>d.toLocaleDateString('en-KE',{month:'long',year:'numeric'});
+const greeting=()=>{const h=new Date().getHours();return h<12?'Good morning':h<17?'Good afternoon':'Good evening';};
+const toast=msg=>{const t=$('toast');t.textContent=msg;t.style.display='block';setTimeout(()=>t.style.display='none',3000);};
+
+// ── ROUTING ──
+window.go = page => {
+  prevScreen = document.querySelector('.screen.active')?.id || null;
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  $('screen-'+page).classList.add('active');
+  $('fab').style.display = page==='app' ? 'flex' : 'none';
+  window.scrollTo(0,0);
+  history.pushState({page},'','#'+page);
+};
+
+window.goBack = () => {
+  if (prevScreen) go(prevScreen.replace('screen-',''));
+  else go(user ? 'app' : 'login');
+};
+
+window.addEventListener('popstate', e => {
+  const p = e.state?.page || location.hash.replace('#','') || (user?'app':'login');
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  $('screen-'+p)?.classList.add('active');
+  $('fab').style.display = p==='app'?'flex':'none';
+});
+
+// handle initial hash
+const initHash = location.hash.replace('#','');
+if (initHash && $('screen-'+initHash)) go(initHash);
+
+// ── LOGIN ──
+$('login-btn').onclick = async () => {
+  const name=($('ln').value||'').trim();
+  const phone=($('lp').value||'').trim().replace(/\D/g,'');
+  if(!name||phone.length<9){toast('⚠ Enter name and valid number');return;}
+  const full='254'+phone.slice(-9);
+  const btn=$('login-btn');
+  btn.innerHTML='<span class="spinner"></span>';btn.disabled=true;
+  try{
+    const ref=doc(db,'epennse_users',full);
+    const snap=await getDoc(ref);
+    if(!snap.exists()) await setDoc(ref,{name,phone:full,createdAt:serverTimestamp(),isPremium:false});
+    user={phone:full,name:snap.exists()?snap.data().name:name};
+    localStorage.setItem('ep_user',JSON.stringify(user));
+    initApp();
+  }catch(e){toast('❌ '+e.message);}
+  btn.innerHTML='GET STARTED →';btn.disabled=false;
+};
+$('lp').onkeydown=e=>{if(e.key==='Enter')$('login-btn').click();};
+
+// auto-login
+const saved=localStorage.getItem('ep_user');
+if(saved){try{user=JSON.parse(saved);initApp();}catch(e){localStorage.removeItem('ep_user');}}
+
+function initApp(){
+  go('app');
+  $('greeting').textContent=greeting();
+  $('hdr-name').textContent=user.name.split(' ')[0];
+  $('avatar').textContent=user.name[0].toUpperCase();
+  $('mo-label').textContent=moLabel(curMonth);
+  buildCatGrid();
+  loadTxs();
+}
+
+// ── MONTH NAV ──
+$('prev-mo').onclick=()=>{curMonth=new Date(curMonth.getFullYear(),curMonth.getMonth()-1,1);$('mo-label').textContent=moLabel(curMonth);loadTxs();};
+$('next-mo').onclick=()=>{
+  const n=new Date(curMonth.getFullYear(),curMonth.getMonth()+1,1);
+  if(n<=new Date()){curMonth=n;$('mo-label').textContent=moLabel(curMonth);loadTxs();}
+};
+
+// ── LOAD TXS ──
+function loadTxs(){
+  if(unsub)unsub();
+  const q=query(collection(db,'epennse_users',user.phone,'transactions'),where('monthKey','==',monthKey()),orderBy('date','desc'));
+  unsub=onSnapshot(q,snap=>{allTxs=snap.docs.map(d=>({id:d.id,...d.data()}));render();});
+}
+
+// ── RENDER ──
+function render(){
+  const exps=allTxs.filter(t=>t.type==='expense');
+  const incs=allTxs.filter(t=>t.type==='income');
+  const totE=exps.reduce((s,t)=>s+t.amount,0);
+  const totI=incs.reduce((s,t)=>s+t.amount,0);
+  const bal=totI-totE;
+  $('tot-spent').textContent=fmt(totE);
+  $('tot-inc').textContent='KES '+fmt(totI);
+  $('tot-exp').textContent='KES '+fmt(totE);
+  $('bal-sub').textContent=totI>0
+    ?(bal>=0?`✅ KES ${fmt(bal)} remaining`:`⚠️ KES ${fmt(Math.abs(bal))} over budget`)
+    :`${allTxs.length} transaction${allTxs.length!==1?'s':''} this month`;
+  renderChart(exps,totE);
+  renderTxs(allTxs.slice(0,6));
+  refreshAiPreview(exps,totE,totI);
+}
+
+function renderChart(exps,total){
+  const tots={};
+  exps.forEach(t=>tots[t.category]=(tots[t.category]||0)+t.amount);
+  const sorted=Object.entries(tots).sort((a,b)=>b[1]-a[1]);
+  $('cc-val').textContent=sorted.length||'—';
+  const legend=$('legend');
+  if(!sorted.length){legend.innerHTML='<span style="color:var(--text-muted);font-size:12px">No expenses yet</span>';}
+  else{legend.innerHTML=sorted.map(([id,val])=>{const c=CATS.find(x=>x.id===id)||CATS[9];const p=total>0?Math.round((val/total)*100):0;return`<div class="leg-item"><div class="leg-dot" style="background:${c.color}"></div><span class="leg-name">${c.icon} ${c.label}</span><span class="leg-pct" style="color:${c.color}">${p}%</span></div>`;}).join('');}
+  const ctx=$('donut').getContext('2d');
+  if(chart)chart.destroy();
+  chart=new Chart(ctx,{type:'doughnut',data:{labels:sorted.length?sorted.map(([id])=>CATS.find(x=>x.id===id)?.label||id):['None'],datasets:[{data:sorted.length?sorted.map(([,v])=>v):[1],backgroundColor:sorted.length?sorted.map(([id])=>CATS.find(x=>x.id===id)?.color||'#94A3B8'):['#1E2D50'],borderWidth:2,borderColor:'#0F1629',hoverBorderColor:'#fff'}]},options:{cutout:'72%',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` KES ${fmt(c.raw)} (${Math.round((c.raw/total)*100)}%)`}}},animation:{animateRotate:true,duration:600}}});
+}
+
+function renderTxs(txs){
+  const list=$('tx-list');
+  if(!txs.length){list.innerHTML='<div class="empty-state"><div class="empty-icon">🧾</div><p>No transactions yet.<br/>Tap the button below to add your first one.</p></div>';return;}
+  list.innerHTML=txs.map(tx=>{const c=CATS.find(x=>x.id===tx.category)||CATS[9];const d=new Date(tx.date).toLocaleDateString('en-KE',{day:'numeric',month:'short'});return`<div class="tx-item"><div class="tx-ico" style="background:${c.color}22">${c.icon}</div><div class="tx-info"><div class="tx-name">${tx.note||c.label}</div><div class="tx-meta">${c.label} · ${d}</div></div><div class="tx-amt ${tx.type}">${tx.type==='expense'?'-':'+'} KES ${fmt(tx.amount)}</div></div>`;}).join('');
+}
+
+$('view-all').onclick=()=>{renderTxs(allTxs);$('view-all').style.display='none';};
+
+// ── AI INSIGHTS ──
+function refreshAiPreview(exps,totE){
+  const p=$('ai-preview');
+  if(!exps.length){p.textContent='Add a few transactions and tap here for personalised spending advice.';return;}
+  const tots={};exps.forEach(e=>tots[e.category]=(tots[e.category]||0)+e.amount);
+  const top=Object.entries(tots).sort((a,b)=>b[1]-a[1])[0];
+  const c=CATS.find(x=>x.id===top[0]);
+  const pct=totE>0?Math.round((top[1]/totE)*100):0;
+  p.textContent=`${c?.icon} ${pct}% of your spending is on ${c?.label}. Tap for your full financial analysis.`;
+}
+
+function computeScore(exps,totE,totI){
+  let score=100;
+  if(totI>0){const sr=((totI-totE)/totI)*100;if(sr<0)score-=40;else if(sr<10)score-=25;else if(sr<20)score-=10;}
+  const ct={};exps.forEach(t=>ct[t.category]=(ct[t.category]||0)+t.amount);
+  const LIM={food:35,transport:20,entertainment:10,shopping:25,airtime:10};
+  Object.entries(LIM).forEach(([k,l])=>{if(ct[k]){const p=(ct[k]/totE)*100;if(p>l*1.5)score-=15;else if(p>l)score-=7;}});
+  return Math.max(0,Math.min(100,Math.round(score)));
+}
+
+function generateInsights(txs){
+  const exps=txs.filter(t=>t.type==='expense');
+  const incs=txs.filter(t=>t.type==='income');
+  const totE=exps.reduce((s,t)=>s+t.amount,0);
+  const totI=incs.reduce((s,t)=>s+t.amount,0);
+  if(!txs.length)return[{type:'info',icon:'💡',title:'Nothing to analyse yet',text:'Start adding your daily expenses — even KES 50 for chai counts.'}];
+  const ins=[];
+  const score=computeScore(exps,totE,totI);
+  const grade=score>=80?'🟢 Excellent':score>=60?'🟡 Good':score>=40?'🟠 Needs Work':'🔴 Critical';
+  const color=score>=80?'#00C896':score>=60?'#F59E0B':score>=40?'#FB923C':'#EF4444';
+  ins.push({type:'score',score,grade,color});
+  if(totI>0){const sr=((totI-totE)/totI)*100;if(sr>=20)ins.push({type:'good',icon:'🎯',title:'Excellent savings rate',text:`You're saving ${Math.round(sr)}% of your income. Financial experts recommend 20%+. You're building real wealth.`});else if(sr>=0)ins.push({type:'warn',icon:'⚠️',title:'Low savings rate',text:`You're saving only ${Math.round(sr)}% of income. Target at least 20%. Review your top expense categories.`});else ins.push({type:'bad',icon:'🚨',title:'Overspending alert',text:`You've spent KES ${fmt(Math.abs(totI-totE))} more than you earned. Cut your biggest category immediately.`});}
+  const ct={};exps.forEach(t=>ct[t.category]=(ct[t.category]||0)+t.amount);
+  const top=Object.entries(ct).sort((a,b)=>b[1]-a[1]);
+  if(top.length){const[tid,tv]=top[0];const c=CATS.find(x=>x.id===tid);const pct=Math.round((tv/totE)*100);const LIM={food:35,transport:20,entertainment:10,shopping:25,airtime:10};const lim=LIM[tid];if(lim&&pct>lim)ins.push({type:'warn',icon:c?.icon,title:`High ${c?.label} spend`,text:`${c?.label} is ${pct}% of your budget (KES ${fmt(tv)}). Recommended ceiling is ${lim}%. Reducing by KES ${fmt(Math.round(tv*.2))} would free up meaningful savings.`});else ins.push({type:'info',icon:c?.icon,title:`Top category: ${c?.label}`,text:`Your biggest expense is ${c?.label} at KES ${fmt(tv)} (${pct}%). This is within a healthy range.`});}
+  if((ct['airtime']||0)>1000)ins.push({type:'warn',icon:'📱',title:'Data spend is high',text:`You've spent KES ${fmt(ct['airtime'])} on airtime. A Safaricom monthly bundle is far cheaper than daily top-ups.`});
+  if(exps.length>=15)ins.push({type:'warn',icon:'📊',title:'High frequency spending',text:`${exps.length} expense entries suggests many small daily purchases. These add up silently — consider a daily spending limit.`});
+  if(totE>5000){const sv=Math.round(totE*.1);ins.push({type:'info',icon:'💰',title:'10% challenge',text:`If you cut spending by 10%, you save KES ${fmt(sv)} this month — KES ${fmt(sv*12)}/year. Enough for a meaningful savings goal.`});}
+  if(exps.length>=3)ins.push({type:'good',icon:'✅',title:'Keep tracking!',text:`${exps.length} entries recorded. Consistent tracking is the single most powerful financial habit.`});
+  return ins;
+}
+
+$('ai-trigger').onclick=()=>{
+  $('modal-ins').classList.add('open');
+  const ins=generateInsights(allTxs);
+  const scoreItem=ins.find(i=>i.type==='score');
+  const scoreHtml=scoreItem?`<div class="score-card"><div class="score-ring" style="color:${scoreItem.color}">${scoreItem.score}</div><div class="score-label">Financial Health Score</div><div class="score-grade" style="color:${scoreItem.color}">${scoreItem.grade}</div></div>`:'';
+  const insHtml=ins.filter(i=>i.type!=='score').map(i=>`<div class="ins-item"><div class="ins-ico ${i.type}">${i.icon}</div><div class="ins-txt"><h4>${i.title}</h4><p>${i.text}</p></div></div>`).join('');
+  $('ins-content').innerHTML=scoreHtml+insHtml;
+};
+$('modal-ins').onclick=e=>{if(e.target===$('modal-ins'))$('modal-ins').classList.remove('open');};
+
+// ── ADD TX ──
+$('fab').onclick=()=>{$('tx-date').value=new Date().toISOString().split('T')[0];$('tx-amt').value='';$('tx-note').value='';$('modal-add').classList.add('open');};
+$('modal-add').onclick=e=>{if(e.target===$('modal-add'))$('modal-add').classList.remove('open');};
+
+window.setType=type=>{
+  txType=type;
+  $('btn-exp').className='type-btn'+(type==='expense'?' act-exp':'');
+  $('btn-inc').className='type-btn'+(type==='income'?' act-inc':'');
+  $('cat-section').style.display=type==='expense'?'block':'none';
+};
+
+function buildCatGrid(){
+  const g=$('cat-grid');
+  g.innerHTML=CATS.map(c=>`<button class="cat-btn ${c.id===selCat?'sel':''}" data-cat="${c.id}"><span class="cat-icon">${c.icon}</span><span class="cat-lbl">${c.label}</span></button>`).join('');
+  g.querySelectorAll('.cat-btn').forEach(b=>{b.onclick=()=>{selCat=b.dataset.cat;g.querySelectorAll('.cat-btn').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');};});
+}
+
+$('save-btn').onclick=async()=>{
+  const amt=parseFloat($('tx-amt').value);
+  const note=$('tx-note').value.trim();
+  const date=$('tx-date').value;
+  if(!amt||amt<=0){toast('⚠ Enter a valid amount');return;}
+  if(!date){toast('⚠ Select a date');return;}
+  const btn=$('save-btn');btn.innerHTML='<span class="spinner"></span>';btn.disabled=true;
+  try{
+    await addDoc(collection(db,'epennse_users',user.phone,'transactions'),{
+      amount:amt,type:txType,category:txType==='expense'?selCat:'income',
+      note,date,monthKey:date.slice(0,7),createdAt:serverTimestamp()
+    });
+    toast('✅ Saved!');
+    $('modal-add').classList.remove('open');
+  }catch(e){toast('❌ '+e.message);}
+  btn.innerHTML='SAVE TRANSACTION';btn.disabled=false;
+};
+</script>
+</body>
+</html>
